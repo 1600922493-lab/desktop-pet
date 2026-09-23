@@ -1,0 +1,351 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  user-select: none;
+  background: transparent;
+}
+
+#pet-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  cursor: grab;
+}
+
+#pet-container:active {
+  cursor: grabbing;
+}
+
+/* 角色外层容器（钟摆旋转用） */
+.character-wrapper {
+  position: absolute;
+  top: 35px;
+  left: 35px;
+  width: 230px;
+  height: 230px;
+  z-index: 2;
+  transform-origin: top center;
+}
+
+/* 呼吸动画 */
+.breathing {
+  width: 100%;
+  height: 100%;
+  animation: breathe 3s ease-in-out infinite;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.03) translateY(-4px);
+  }
+}
+
+.character {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* 星星背景层 - 在角色背后，按参考图比例 */
+.stars-bg {
+  position: absolute;
+  top: 35px;
+  left: 35px;
+  width: 230px;
+  height: 230px;
+  z-index: 1;
+  pointer-events: none;
+  transition: transform 0.15s ease-out;
+}
+
+.stars-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* 双击动画视频 */
+.animation-container {
+  position: absolute;
+  top: 28px;
+  left: 30px;
+  width: 240px;
+  height: 240px;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.animation-video {
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+
+.animation-glow-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 240px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(8px) brightness(1.5);
+  mix-blend-mode: screen;
+}
+
+/* 前景小星星层 */
+.sparkle-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 300px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* 两种大小：大星28px，小星14px */
+.sparkle:nth-child(1),
+.sparkle:nth-child(2),
+.sparkle:nth-child(3) {
+  width: 28px;
+  height: 28px;
+}
+
+.sparkle:nth-child(4),
+.sparkle:nth-child(5),
+.sparkle:nth-child(6) {
+  width: 14px;
+  height: 14px;
+}
+
+/* 散布位置（不规则） */
+.sparkle:nth-child(1) { top: 20px; left: 60px; }
+.sparkle:nth-child(2) { top: 180px; left: 220px; }
+.sparkle:nth-child(3) { top: 200px; left: 80px; }
+.sparkle:nth-child(4) { top: 60px; left: 230px; }
+.sparkle:nth-child(5) { top: 120px; left: 40px; }
+.sparkle:nth-child(6) { top: 240px; left: 180px; }
+
+/* 点击后显示并闪烁 */
+.sparkle-layer.active .sparkle {
+  animation: sparkle 2.5s ease-in-out infinite;
+}
+
+.sparkle:nth-child(1) { animation-delay: 0s; }
+.sparkle:nth-child(2) { animation-delay: 0.4s; }
+.sparkle:nth-child(3) { animation-delay: 0.8s; }
+.sparkle:nth-child(4) { animation-delay: 1.2s; }
+.sparkle:nth-child(5) { animation-delay: 1.6s; }
+.sparkle:nth-child(6) { animation-delay: 2.0s; }
+
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  15% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+  30% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  70% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  85% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* zzZ 气泡 */
+.zzz-container {
+  position: absolute;
+  top: 80px;
+  left: 180px;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.zzz {
+  display: inline-block;
+  font-size: 24px;
+  font-weight: bold;
+  color: #FF9ED2;
+  text-shadow:
+    0 0 6px rgba(255, 158, 210, 0.8),
+    0 0 12px rgba(255, 158, 210, 0.5);
+  margin: 0 3px;
+  animation: zzzFade 2s ease-in-out infinite;
+}
+
+.zzz:nth-child(1) {
+  font-size: 20px;
+  animation-delay: 0s;
+}
+
+.zzz:nth-child(2) {
+  font-size: 24px;
+  animation-delay: 0.6s;
+}
+
+.zzz:nth-child(3) {
+  font-size: 30px;
+  animation-delay: 1.2s;
+}
+
+@keyframes zzzFade {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+/* 爱心容器 */
+.hearts-container {
+  position: absolute;
+  top: 60px;
+  left: 50px;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.heart {
+  position: absolute;
+  font-weight: bold;
+  color: #FF9ED2;
+  text-shadow:
+    0 0 6px rgba(255, 158, 210, 0.8),
+    0 0 12px rgba(255, 158, 210, 0.5);
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: scale(0.3) translateY(10px);
+  animation: none;
+}
+
+.hearts-container.show .heart:nth-child(1) {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-delay: 0s;
+}
+
+.hearts-container.show .heart:nth-child(2) {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-delay: 0.3s;
+}
+
+.hearts-container.show .heart:nth-child(3) {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-delay: 0.6s;
+}
+
+.heart:nth-child(1) {
+  font-size: 14px;
+  top: 75px;
+  left: 25px;
+}
+
+.heart:nth-child(2) {
+  font-size: 18px;
+  top: 60px;
+  left: 37px;
+}
+
+.heart:nth-child(3) {
+  font-size: 12px;
+  top: 67px;
+  left: 45px;
+}
+
+.hearts-container.show .heart:nth-child(1) {
+  animation: heartFloat 2s ease-in-out 0.5s infinite;
+}
+
+.hearts-container.show .heart:nth-child(2) {
+  animation: heartFloat 2s ease-in-out 1s infinite;
+}
+
+.hearts-container.show .heart:nth-child(3) {
+  animation: heartFloat 2s ease-in-out 1.5s infinite;
+}
+
+@keyframes heartFloat {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-6px);
+  }
+}
+
+/* 关闭按钮 */
+.close-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 26px;
+  text-align: center;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.3s;
+  padding: 0;
+}
+
+#pet-container:hover .close-btn {
+  opacity: 1;
+}
+
+.close-btn:hover {
+  background: rgba(255, 100, 100, 0.9);
+  color: white;
+}

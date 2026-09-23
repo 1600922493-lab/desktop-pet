@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>桌宠</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="pet-container">
+    <!-- 星星背景层（角色背后） -->
+    <div class="stars-bg" id="starsBg">
+      <img src="star.png" class="stars-img" id="starsImg">
+    </div>
+
+    <!-- 角色层（外层用于钟摆旋转） -->
+    <div class="character-wrapper" id="characterWrapper">
+      <div class="breathing">
+        <img src="character.png" alt="桌宠" class="character">
+      </div>
+    </div>
+
+    <!-- 前景小星星层 -->
+    <div class="sparkle-layer" id="sparkleLayer">
+      <img src="sparkle.png" class="sparkle">
+      <img src="sparkle.png" class="sparkle">
+      <img src="sparkle.png" class="sparkle">
+      <img src="sparkle.png" class="sparkle">
+      <img src="sparkle.png" class="sparkle">
+      <img src="sparkle.png" class="sparkle">
+    </div>
+
+    <!-- 双击动画视频 -->
+    <div class="animation-container" id="animContainer" style="display: none;">
+      <canvas class="animation-glow-canvas" id="animGlowCanvas" width="768" height="768"></canvas>
+      <canvas class="animation-video" id="animCanvas" width="768" height="768"></canvas>
+      <video id="animVideo" playsinline preload="auto" style="display: none;">
+        <source src="animation.mp4" type="video/mp4">
+      </video>
+    </div>
+
+    <!-- zzZ 气泡 -->
+    <div class="zzz-container" id="zzz">
+      <span class="zzz">z</span>
+      <span class="zzz">z</span>
+      <span class="zzz">Z</span>
+    </div>
+
+    <!-- 爱心容器 -->
+    <div class="hearts-container" id="hearts">
+      <span class="heart">♥</span>
+      <span class="heart">♥</span>
+      <span class="heart">♥</span>
+    </div>
+
+    <!-- 关闭按钮 -->
+    <button class="close-btn" id="closeBtn">×</button>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+src-tauri/target/
+.DS_Store
+*.dmg.blockmap
+src-tauri/icons/icon.iconset/
+src-tauri/icons/512x512.png
