@@ -19,16 +19,11 @@ jobs:
         with:
           workspaces: src-tauri
 
-      # 官方 action，比 cargo install 快十几分钟
-      - name: Install Tauri CLI
-        uses: taiki-e/install-action@v2
-        with:
-          tool: tauri-cli@^2
-
-      # targets 里的 dmg 会被 Tauri 按平台自动过滤，Windows 上只出 nsis
+      # 官方 action：自带 tauri-cli 安装 + 构建
       - name: Build
-        run: cargo tauri build
-        working-directory: src-tauri
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: src-tauri
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
@@ -50,14 +45,10 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Install Tauri CLI
-        uses: taiki-e/install-action@v2
-        with:
-          tool: tauri-cli@^2
-
       - name: Build
-        run: cargo tauri build
-        working-directory: src-tauri
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: src-tauri
 
       - name: Upload macOS dmg
         uses: actions/upload-artifact@v4
