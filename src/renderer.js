@@ -1,5 +1,35 @@
-const { invoke } = window.__TAURI__.core;
+// ===== 等待 Tauri IPC 就绪 =====
+let invoke = null;
+let ipcReady = false;
 
+function setupIPC() {
+  return new Promise((resolve) => {
+    if (window.__TAURI__?.core?.invoke) {
+      invoke = window.__TAURI__.core.invoke.bind(window.__TAURI__.core);
+      ipcReady = true;
+      console.log('[桌宠] IPC 就绪 (立即)');
+      return resolve();
+    }
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      if (window.__TAURI__?.core?.invoke) {
+        clearInterval(poll);
+        invoke = window.__TAURI__.core.invoke.bind(window.__TAURI__.core);
+        ipcReady = true;
+        console.log('[桌宠] IPC 就绪 (第', attempts, '次轮询)');
+        resolve();
+      }
+      if (attempts > 100) {
+        clearInterval(poll);
+        console.error('[桌宠] IPC 超时! __TAURI__:', JSON.stringify(Object.keys(window.__TAURI__ || {})));
+        resolve();
+      }
+    }, 50);
+  });
+}
+
+// ===== DOM 元素 =====
 const closeBtn = document.getElementById('closeBtn');
 const zzzContainer = document.getElementById('zzz');
 const starsBg = document.getElementById('starsBg');
@@ -8,25 +38,39 @@ const sparkleLayer = document.getElementById('sparkleLayer');
 const character = document.querySelector('.breathing');
 const characterWrapper = document.getElementById('characterWrapper');
 const animVideo = document.getElementById('animVideo');
-const animCanvas = document.getElementById('animCanvas');
-const animGlowCanvas = document.getElementById('animGlowCanvas');
 const animContainer = document.getElementById('animContainer');
 const hearts = document.getElementById('hearts');
-const ctx = animCanvas.getContext('2d');
-const glowCtx = animGlowCanvas.getContext('2d');
 
-animVideo.addEventListener('loadeddata', () => {
-  console.log('视频加载成功，时长:', animVideo.duration);
+// ===== 初始化 =====
+setupIPC().then(() => {
+  console.log('[桌宠] 初始化完成, invoke类型:', typeof invoke);
+
+  // 关闭按钮
+  closeBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    console.log('[桌宠] 关闭按钮被点击, invoke:', typeof invoke);
+    if (invoke) {
+      try {
+        await invoke('close_app');
+      } catch (err) {
+        console.error('[桌宠] close_app 失败:', err);
+        window.close();
+      }
+    } else {
+      window.close();
+    }
+  });
 });
 
-animVideo.addEventListener('error', (e) => {
-  console.error('视频加载失败:', e);
-});
-
+// ===== 双击/单击（不需要 IPC，立即绑定）=====
 let clickTimer = null;
-let clickCount = 0;
 let lastClickTime = 0;
-let animationFrame = null;
+
+// 回到第一帧并暂停，避免下次播放时残留上一轮的结尾画面
+animVideo.addEventListener('loadeddata', () => {
+  try { animVideo.currentTime = 0; } catch (_) {}
+  animVideo.pause();
+});
 
 petContainer.addEventListener('click', (e) => {
   if (e.target === closeBtn) return;
@@ -37,91 +81,37 @@ petContainer.addEventListener('click', (e) => {
 
   if (timeSinceLastClick < 400) {
     clearTimeout(clickTimer);
-    clickCount = 0;
+
+    // 显示容器前先把视频归零，避免闪现上次的残留帧
+    animVideo.pause();
+    try { animVideo.currentTime = 0; } catch (_) {}
 
     animContainer.style.display = 'block';
-    animVideo.currentTime = 0;
-    animVideo.play();
-
-    animGlowCanvas.style.transition = 'opacity 1.2s ease';
-    animGlowCanvas.style.opacity = '0';
-
-    setTimeout(() => {
-      animGlowCanvas.style.opacity = '1';
-    }, 50);
-
-    setTimeout(() => {
-      hearts.classList.add('show');
-      setTimeout(() => {
-        hearts.classList.remove('show');
-      }, 4000);
-    }, 2000);
 
     character.style.transition = 'opacity 0.3s ease';
     character.style.opacity = '0';
-
     animContainer.style.transition = 'opacity 0.3s ease';
     animContainer.style.opacity = '1';
 
-    function renderFrame() {
-      if (animVideo.paused || animVideo.ended) {
-        animContainer.style.display = 'none';
-        return;
-      }
-
-      ctx.drawImage(animVideo, 0, 0, 768, 768);
-      glowCtx.drawImage(animVideo, 0, 0, 768, 768);
-
-      const imageData = ctx.getImageData(0, 0, 768, 768);
-      const data = imageData.data;
-      const glowData = glowCtx.getImageData(0, 0, 768, 768);
-      const glowPixels = glowData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const brightness = (r + g + b) / 3;
-
-        if (brightness < 30) {
-          data[i + 3] = 0;
-          glowPixels[i + 3] = 0;
-        } else if (brightness < 60) {
-          const alpha = Math.floor((brightness - 30) / 30 * 255);
-          data[i + 3] = alpha;
-          glowPixels[i] = 255;
-          glowPixels[i + 1] = 248;
-          glowPixels[i + 2] = 220;
-          glowPixels[i + 3] = Math.floor(alpha * 0.4);
-        } else {
-          glowPixels[i] = 255;
-          glowPixels[i + 1] = 248;
-          glowPixels[i + 2] = 220;
-          glowPixels[i + 3] = Math.floor(data[i + 3] * 0.25);
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      glowCtx.putImageData(glowData, 0, 0);
-
-      animationFrame = requestAnimationFrame(renderFrame);
+    const playPromise = animVideo.play();
+    if (playPromise) {
+      playPromise.catch(err => console.error('[桌宠] 播放失败:', err));
     }
 
-    animVideo.addEventListener('play', () => {
-      renderFrame();
-    });
+    setTimeout(() => {
+      hearts.classList.add('show');
+      setTimeout(() => { hearts.classList.remove('show'); }, 4000);
+    }, 2000);
 
     animVideo.onended = () => {
-      cancelAnimationFrame(animationFrame);
       hearts.classList.remove('show');
-      animGlowCanvas.style.transition = 'opacity 1.2s ease';
-      animGlowCanvas.style.opacity = '0';
       character.style.transition = 'opacity 0.3s ease';
       character.style.opacity = '1';
       animContainer.style.transition = 'opacity 0.3s ease';
       animContainer.style.opacity = '0';
       setTimeout(() => {
         animContainer.style.display = 'none';
+        animVideo.currentTime = 0;
       }, 300);
     };
   } else {
@@ -140,21 +130,26 @@ petContainer.addEventListener('click', (e) => {
   }
 });
 
+// ===== 拖拽 =====
 let isDragging = false;
-let hasMoved = false;
-let startX, startY;
-let startWinX, startWinY;
+let startX, startY, startWinX, startWinY;
 
 petContainer.addEventListener('mousedown', async (e) => {
   if (e.target === closeBtn) return;
   isDragging = true;
-  hasMoved = false;
   startX = e.screenX;
   startY = e.screenY;
 
-  const bounds = await invoke('get_window_bounds');
-  startWinX = bounds.x;
-  startWinY = bounds.y;
+  if (invoke) {
+    try {
+      const bounds = await invoke('get_window_bounds');
+      startWinX = bounds.x;
+      startWinY = bounds.y;
+    } catch (err) {
+      console.error('[桌宠] 获取位置失败:', err);
+      startWinX = 0; startWinY = 0;
+    }
+  }
 
   characterWrapper.style.transition = 'transform 0.15s ease-out';
   characterWrapper.style.transform = 'scale(0.95, 1.05)';
@@ -162,29 +157,22 @@ petContainer.addEventListener('mousedown', async (e) => {
 
 document.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
-
   const dx = e.screenX - startX;
   const dy = e.screenY - startY;
 
-  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-    hasMoved = true;
+  if (invoke) {
+    invoke('drag_window', {
+      x: startWinX + dx + 150,
+      y: startWinY + dy + 150,
+    }).catch(err => console.error('[桌宠] 拖拽失败:', err));
   }
 
-  invoke('drag_window', {
-    x: startWinX + dx + 150,
-    y: startWinY + dy + 150
-  });
-
-  const parallax = 0.08;
   const maxOffset = 15;
-  let offsetX = -dx * parallax;
-  let offsetY = -dy * parallax;
-  offsetX = Math.max(-maxOffset, Math.min(maxOffset, offsetX));
-  offsetY = Math.max(-maxOffset, Math.min(maxOffset, offsetY));
+  let offsetX = Math.max(-maxOffset, Math.min(maxOffset, -dx * 0.08));
+  let offsetY = Math.max(-maxOffset, Math.min(maxOffset, -dy * 0.08));
   starsBg.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
 
-  const maxSwing = 15;
-  const swing = Math.min(maxSwing, Math.abs(dx) * 0.15);
+  const swing = Math.min(15, Math.abs(dx) * 0.15);
   const swingDir = dx > 0 ? 1 : -1;
   characterWrapper.style.transform = `rotate(${swing * swingDir}deg)`;
 });
@@ -192,23 +180,13 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', () => {
   if (!isDragging) return;
   isDragging = false;
-
   starsBg.style.transition = 'transform 0.4s ease-out';
   starsBg.style.transform = 'translate(0, 0)';
-  setTimeout(() => {
-    starsBg.style.transition = 'transform 0.15s ease-out';
-  }, 450);
-
+  setTimeout(() => { starsBg.style.transition = 'transform 0.15s ease-out'; }, 450);
   characterWrapper.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
   characterWrapper.style.transform = 'rotate(0deg)';
-
   setTimeout(() => {
     characterWrapper.style.transition = 'transform 0.2s ease-out';
     characterWrapper.style.transform = 'rotate(0deg)';
   }, 300);
-});
-
-closeBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  invoke('close_app');
 });

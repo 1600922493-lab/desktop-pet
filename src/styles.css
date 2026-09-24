@@ -2,12 +2,16 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* 禁用选区：WebKit 在 mousedown 时会启动选区流程，macOS 用系统强调色重绘整个窗口
+     → 表现为拖拽瞬间的淡蓝色半透明方块。写在 * 上才能覆盖所有子元素 */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-body {
+html, body {
   overflow: hidden;
   user-select: none;
-  background: transparent;
+  background: transparent !important;
 }
 
 #pet-container {
@@ -87,25 +91,15 @@ body {
   opacity: 0;
 }
 
+/* 视频背景已由 VP9 alpha 通道透明，无需 canvas 抠图。
+   光晕用 drop-shadow —— 跟随 alpha 轮廓，GPU 原生，零 JS 开销 */
 .animation-video {
   width: 240px;
   height: 240px;
   object-fit: contain;
-  position: relative;
-  z-index: 2;
-}
-
-.animation-glow-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 240px;
-  height: 240px;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  filter: blur(8px) brightness(1.5);
-  mix-blend-mode: screen;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(255, 248, 220, 0.75))
+          drop-shadow(0 0 22px rgba(255, 230, 180, 0.45));
 }
 
 /* 前景小星星层 */
@@ -204,6 +198,7 @@ body {
 
 .zzz {
   display: inline-block;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
   font-size: 24px;
   font-weight: bold;
   color: #FF9ED2;
