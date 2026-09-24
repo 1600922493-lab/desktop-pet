@@ -3,6 +3,7 @@ name: Build Desktop Pet
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
@@ -56,3 +57,52 @@ jobs:
           name: desktop-pet-macos
           path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
+
+  # 打 tag（如 v1.0.0）时，把两个安装包发到 Releases 页，生成公开下载链接
+  release:
+    needs: [build-windows, build-macos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | head -20
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/desktop-pet-windows/*.exe
+            artifacts/desktop-pet-macos/*.dmg
+          draft: false
+          generate_release_notes: true
+          body: |
+            桌面宠物 · 跨平台安装包
+
+            ## 下载
+
+            - **Windows**：`桌宠_x.x.x_x64-setup.exe`
+            - **macOS**：`桌宠_x.x.x_x64.dmg`
+
+            ## 安装说明
+
+            安装包**未做代码签名**，首次运行会被系统拦截，这是正常的：
+
+            - **Windows**：弹出「Windows 已保护你的电脑」→ 点「更多信息」→「仍要运行」
+            - **macOS**：提示「无法打开，Apple 无法检查」→ 右键点 app → 「打开」，
+              或到「系统设置 → 隐私与安全性」点「仍要打开」
+
+            ## 使用
+
+            透明无边框窗口，角色悬浮在桌面上：
+
+            - **单击**：zzZ + 星星特效
+            - **双击**：播放动画
+            - **拖拽**：移动位置
+            - **悬停右上角**：显示关闭按钮
